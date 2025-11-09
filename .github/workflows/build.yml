@@ -30,15 +30,13 @@ jobs:
     - name: Build OpenSSL
       shell: cmd
       run: |
+        git clone https://github.com/openssl/openssl.git --depth 1 --branch openssl-${{ matrix.openssl-version }}
         dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
         call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=${{ matrix.msvc-version }}
-        git clone https://github.com/openssl/openssl.git --depth=1 --single-branch
         cd openssl
-        git fetch origin tag openssl-${{ matrix.openssl-version }} --no-tags --depth=1
-        git checkout FETCH_HEAD
         mkdir build
         cd build
-        perl ..\Configure ${{ matrix.openssl-config }} no-zlib no-tests no-debug-info
+        perl ..\Configure ${{ matrix.openssl-config }} no-zlib no-tests
         perl configdata.pm --dump
         nmake
     - name: Create zip package
@@ -50,6 +48,7 @@ jobs:
         mkdir package\include\openssl
         copy /Y openssl\build\libcrypto_static.lib package\lib\libcrypto_static.lib
         copy /Y openssl\build\libssl_static.lib package\lib\libssl_static.lib
+        copy /Y openssl\build\ossl_static.pdb package\lib\ossl_static.pdb
         copy /Y openssl\include\openssl\*.h package\include\openssl
         copy /Y openssl\build\include\openssl\*.h package\include\openssl
         7z a -tzip windows-openssl-${{ matrix.openssl-version }}-${{ matrix.platform-toolset }}.zip .\package\*
@@ -76,13 +75,11 @@ jobs:
       uses: actions/checkout@v4
     - name: Build OpenSSL
       run: |
-        git clone https://github.com/openssl/openssl.git --depth=1 --single-branch
+        git clone https://github.com/openssl/openssl.git --depth 1 --branch openssl-${{ matrix.openssl-version }}
         cd openssl
-        git fetch origin tag openssl-${{ matrix.openssl-version }} --no-tags --depth=1
-        git checkout FETCH_HEAD
         mkdir build
         cd build
-        ../Configure ${{ matrix.openssl-config }} no-zlib no-tests no-debug-info
+        ../Configure ${{ matrix.openssl-config }} no-zlib no-tests
         perl configdata.pm --dump
         make
     - name: Create zip package
@@ -116,18 +113,16 @@ jobs:
       uses: actions/checkout@v4
     - name: Build
       run: |
-        git clone https://github.com/openssl/openssl.git --depth=1 --single-branch
+        git clone https://github.com/openssl/openssl.git --depth 1 --branch openssl-${{ matrix.openssl-version }}
         cd openssl
-        git fetch origin tag openssl-${{ matrix.openssl-version }} --no-tags --depth=1
-        git checkout FETCH_HEAD
         mkdir build-x64
         cd build-x64
-        ../Configure darwin64-x86_64 no-zlib no-tests no-debug-info
+        ../Configure darwin64-x86_64 no-zlib no-tests
         make
         cd ..
         mkdir build-arm64
         cd build-arm64
-        ../Configure darwin64-arm64 no-zlib no-tests no-debug-info
+        ../Configure darwin64-arm64 no-zlib no-tests
         make
         cd ..
         mkdir build
