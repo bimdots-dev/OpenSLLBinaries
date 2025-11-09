@@ -38,7 +38,7 @@ jobs:
         git checkout FETCH_HEAD
         mkdir build
         cd build
-        perl ..\Configure ${{ matrix.openssl-config }} no-zlib no-tests
+        perl ..\Configure ${{ matrix.openssl-config }} no-zlib no-tests no-debug-info
         perl configdata.pm --dump
         nmake
     - name: Create zip package
@@ -82,7 +82,7 @@ jobs:
         git checkout FETCH_HEAD
         mkdir build
         cd build
-        ../Configure ${{ matrix.openssl-config }} no-zlib no-tests
+        ../Configure ${{ matrix.openssl-config }} no-zlib no-tests no-debug-info
         perl configdata.pm --dump
         make
     - name: Create zip package
@@ -122,12 +122,12 @@ jobs:
         git checkout FETCH_HEAD
         mkdir build-x64
         cd build-x64
-        ../Configure darwin64-x86_64 no-zlib no-tests
+        ../Configure darwin64-x86_64 no-zlib no-tests no-debug-info
         make
         cd ..
         mkdir build-arm64
         cd build-arm64
-        ../Configure darwin64-arm64 no-zlib no-tests
+        ../Configure darwin64-arm64 no-zlib no-tests no-debug-info
         make
         cd ..
         mkdir build
