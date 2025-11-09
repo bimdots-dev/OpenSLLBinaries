@@ -67,9 +67,9 @@ jobs:
       matrix:
         include:
           - openssl-version: 3.6.0
-            openssl-config: darwin64-x86_64
+            openssl-config: x86_64
           - openssl-version: 3.6.0
-            openssl-config: darwin64-arm64
+            openssl-config: arm64
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -79,7 +79,7 @@ jobs:
         cd openssl
         mkdir build
         cd build
-        ../Configure ${{ matrix.openssl-config }} no-zlib no-tests
+        ../Configure darwin64-${{ matrix.openssl-config }} no-zlib no-tests
         perl configdata.pm --dump
         make
     - name: Create zip package
@@ -92,7 +92,7 @@ jobs:
         cp openssl/build/libssl.a package/lib/libssl.a
         cp openssl/include/openssl/*.h package/include/openssl
         cp openssl/build/include/openssl/*.h package/include/openssl
-        7z a -tzip macos-openssl-${{ matrix.openssl-version }}.zip ./package/*
+        7z a -tzip macos-openssl-${{ matrix.openssl-version }}-${{ matrix.openssl-config }}.zip ./package/*
     - name: Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: ncipollo/release-action@v1
