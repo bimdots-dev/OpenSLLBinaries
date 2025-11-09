@@ -1,0 +1,151 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ '*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - openssl-version: 3.6.0
+            openssl-config: VC-WIN64A
+            platform-toolset: v142
+            msvc-version: 14.29
+          - openssl-version: 3.6.0
+            openssl-config: VC-WIN64A
+            platform-toolset: v143
+            msvc-version: 14.44
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup NASM
+      uses: ilammy/setup-nasm@v1
+    - name: Build OpenSSL
+      shell: cmd
+      run: |
+        dir "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC"
+        call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=${{ matrix.msvc-version }}
+        git clone https://github.com/openssl/openssl.git --depth=1 --single-branch
+        cd openssl
+        git fetch origin tag openssl-${{ matrix.openssl-version }} --no-tags --depth=1
+        git checkout FETCH_HEAD
+        mkdir build
+        cd build
+        perl ..\Configure ${{ matrix.openssl-config }} no-zlib no-tests
+        nmake
+    - name: Create zip package
+      shell: cmd
+      run: |
+        mkdir package
+        mkdir package\lib
+        mkdir package\include
+        mkdir package\include\openssl
+        copy /Y openssl\build\libcrypto_static.lib package\lib\libcrypto_static.lib
+        copy /Y openssl\build\libssl_static.lib package\lib\libssl_static.lib
+        copy /Y openssl\include\openssl\*.h package\include\openssl
+        copy /Y openssl\build\include\openssl\*.h package\include\openssl
+        7z a -tzip windows-openssl-${{ matrix.openssl-version }}-${{ matrix.platform-toolset }}.zip .\package\*
+    - name: Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "*.zip"
+        allowUpdates: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  macos:
+    runs-on: macos-13
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - openssl-version: 3.6.0
+            openssl-config: darwin64-x86_64
+          - openssl-version: 3.6.0
+            openssl-config: darwin64-arm64
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Build OpenSSL
+      run: |
+        git clone https://github.com/openssl/openssl.git --depth=1 --single-branch
+        cd openssl
+        git fetch origin tag openssl-${{ matrix.openssl-version }} --no-tags --depth=1
+        git checkout FETCH_HEAD
+        mkdir build
+        cd build
+        ../Configure ${{ matrix.openssl-config }} no-zlib no-tests
+        make
+    - name: Create zip package
+      run: |
+        mkdir package
+        mkdir package/lib
+        mkdir package/include
+        mkdir package/include/openssl
+        cp openssl/build/libcrypto.a package/lib/libcrypto.a
+        cp openssl/build/libssl.a package/lib/libssl.a
+        cp openssl/include/openssl/*.h package/include/openssl
+        cp openssl/build/include/openssl/*.h package/include/openssl
+        7z a -tzip macos-openssl-${{ matrix.openssl-version }}.zip ./package/*
+    - name: Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "*.zip"
+        allowUpdates: true
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+  macos-universal:
+    runs-on: macos-13
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - openssl-version: 3.6.0
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Build
+      run: |
+        git clone https://github.com/openssl/openssl.git --depth=1 --single-branch
+        cd openssl
+        git fetch origin tag openssl-${{ matrix.openssl-version }} --no-tags --depth=1
+        git checkout FETCH_HEAD
+        mkdir build-x64
+        cd build-x64
+        ../Configure darwin64-x86_64 no-zlib no-tests
+        make
+        cd ..
+        mkdir build-arm64
+        cd build-arm64
+        ../Configure darwin64-arm64 no-zlib no-tests
+        make
+        cd ..
+        mkdir build
+        lipo build-x64/libcrypto.a build-arm64/libcrypto.a -create -output build/libcrypto.a
+        lipo build-x64/libssl.a build-arm64/libssl.a -create -output build/libssl.a
+    - name: Create zip package
+      run: |
+        mkdir package
+        mkdir package/lib
+        mkdir package/include
+        mkdir package/include/openssl
+        cp openssl/build/libcrypto.a package/lib/libcrypto.a
+        cp openssl/build/libssl.a package/lib/libssl.a
+        cp openssl/include/openssl/*.h package/include/openssl
+        cp openssl/build-x64/include/openssl/*.h package/include/openssl
+        7z a -tzip macos-universal-openssl-${{ matrix.openssl-version }}.zip ./package/*
+    - name: Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "*.zip"
+        allowUpdates: true
+        token: ${{ secrets.GITHUB_TOKEN }}

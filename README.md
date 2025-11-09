@@ -1,2 +1,3 @@
-# OpenSLLBinaries
-OpenSSL binaries.
+# OpenSLL Binaries
+
+Binary files for OpenSSL.
