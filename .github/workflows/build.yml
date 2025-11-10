@@ -36,7 +36,7 @@ jobs:
         cd openssl
         mkdir build
         cd build
-        perl ..\Configure ${{ matrix.openssl-config }} no-zlib no-tests
+        perl ..\Configure ${{ matrix.openssl-config }}
         perl configdata.pm --dump
         nmake
     - name: Create zip package
@@ -79,7 +79,7 @@ jobs:
         cd openssl
         mkdir build
         cd build
-        ../Configure darwin64-${{ matrix.openssl-config }} no-zlib no-tests
+        ../Configure darwin64-${{ matrix.openssl-config }}
         perl configdata.pm --dump
         make
     - name: Create zip package
@@ -117,12 +117,12 @@ jobs:
         cd openssl
         mkdir build-x64
         cd build-x64
-        ../Configure darwin64-x86_64 no-zlib no-tests
+        ../Configure darwin64-x86_64
         make
         cd ..
         mkdir build-arm64
         cd build-arm64
-        ../Configure darwin64-arm64 no-zlib no-tests
+        ../Configure darwin64-arm64
         make
         cd ..
         mkdir build
